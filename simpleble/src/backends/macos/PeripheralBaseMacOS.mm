@@ -627,6 +627,7 @@
 }
 
 - (void)peripheral:(CBPeripheral*)peripheral didUpdateValueForCharacteristic:(CBCharacteristic*)characteristic error:(NSError*)error {
+    NSLog(@"$$$$ PeripheralBaseMacOS priority: %f", [NSThread currentThread].threadPriority);
     CharacteristicExtras* characteristicExtras = [self.characteristicExtras objectForKey:[[characteristic.UUID UUIDString] lowercaseString]];
 
     if (characteristic.isNotifying) {
