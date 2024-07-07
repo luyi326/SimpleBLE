@@ -36,15 +36,15 @@
         dispatch_queue_attr_t qos = dispatch_queue_attr_make_with_qos_class(DISPATCH_QUEUE_SERIAL, QOS_CLASS_USER_INITIATED, -10);
         _centralManagerQueue = dispatch_queue_create("AdapterBaseMacOS.centralManagerQueue", qos);
         _centralManager = [[CBCentralManager alloc] initWithDelegate:self queue:_centralManagerQueue options:nil];
-        dispatch_async(_centralManagerQueue, ^{
-            [self setThreadPriority];
-        });
+        // dispatch_async(_centralManagerQueue, ^{
+        //     [self setThreadPriority];
+        // });
 
         // Wait for the central manager state to be updated for up to 5 seconds.
         NSDate* endDate = [NSDate dateWithTimeInterval:5.0 sinceDate:NSDate.now];
-        // while (_centralManager.state == CBManagerStateUnknown && [NSDate.now compare:endDate] == NSOrderedAscending) {
-        //     [NSThread sleepForTimeInterval:0.01];
-        // }
+        while (_centralManager.state == CBManagerStateUnknown && [NSDate.now compare:endDate] == NSOrderedAscending) {
+            [NSThread sleepForTimeInterval:0.01];
+        }
     }
     return self;
 }
