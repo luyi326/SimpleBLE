@@ -64,7 +64,8 @@
     param.sched_priority = 50; // Adjust as needed, between 1 and 63 for SCHED_RR
     
     if (pthread_setschedparam(thread, policy, &param) != 0) {
-        NSLog(@"Failed to set thread scheduling parameters");
+        int err = errno;
+        NSLog(@"Failed to set thread scheduling parametersm errno: %d", err);
     } else {
         NSLog(@"Set thread policy: SCHED_RR, priority: %d", param.sched_priority);
     }
