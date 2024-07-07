@@ -56,6 +56,8 @@
 
     // Get current policy and priority
     pthread_getschedparam(thread, &policy, &param);
+
+    NSLog(@"Current policy is %d", policy);
     
     // Set desired policy and priority
     policy = SCHED_RR;
