@@ -745,6 +745,7 @@ class WorkQueue {
 
             SimpleBLE::ByteArray stuff((const char*)characteristic.value.bytes, characteristic.value.length);
             __weak typeof(self) weakSelf = self;
+            CFRetain((__bridge CFTypeRef)characteristicExtras);
             self.workQueue->RunAsync([=, &weakSelf, &characteristicExtras, &stuff]() {
                 __strong typeof(weakSelf) strongSelf = weakSelf;
                 if (!strongSelf) return;
@@ -752,6 +753,7 @@ class WorkQueue {
                 if (characteristicExtras->valueChangedCallback != nil) {
                     characteristicExtras->valueChangedCallback("");
                 }
+                CFRelease((__bridge CFTypeRef)characteristicExtras);
             });
 
     } else {
