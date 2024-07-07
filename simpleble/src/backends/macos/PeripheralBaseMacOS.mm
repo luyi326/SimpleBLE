@@ -5,8 +5,115 @@
 #import "ServiceBuilder.h"
 #import "Utils.h"
 
+#include <atomic>
+#include <condition_variable>
+#include <functional>
+#include <mutex>
+#include <queue>
+#include <thread>
+#include <pthread.h>
+#include "nlk_logging.hpp"
+#include <iostream>
+using namespace std;
+
 #import <simpleble/Exceptions.h>
 #import <optional>
+
+class WorkQueue {
+ public:
+  WorkQueue() {
+    work_thread_ = std::thread(&WorkQueue::RunAsyncThread, this);
+    pthread_t native_handle = work_thread_.native_handle();
+    int policy;
+    struct sched_param param;
+
+    // Get current scheduling policy
+    if (pthread_getschedparam(native_handle, &policy, &param) != 0) {
+      std::cerr << "$$$$ Failed to get thread scheduling parameters" << std::endl;
+      return;
+    }
+
+    // Set desired scheduling policy and priority
+    policy = SCHED_FIFO; // macOS generally uses SCHED_OTHER
+    param.sched_priority = 50; // Valid range for SCHED_OTHER priorities
+
+    if (pthread_setschedparam(native_handle, policy, &param) != 0) {
+      std::cerr << "$$$$ Failed to set thread scheduling parameters" << std::endl;
+      return;
+    }
+  }
+
+  // Remove copy constructor and copy assignment
+  WorkQueue(const WorkQueue &)            = delete;
+  WorkQueue &operator=(const WorkQueue &) = delete;
+
+  virtual ~WorkQueue() {
+    if (!work_thread_active_) return;
+
+    {
+      std::lock_guard<std::mutex> lg(work_mutex_);
+      work_thread_active_ = false;
+    }
+
+    if (work_thread_.joinable()) {
+      work_cv_.notify_one();
+      work_thread_.join();
+    }
+  }
+
+  /**
+   * @brief Run function in an async thread.
+   */
+  void RunAsync(std::function<void(void)> func) {
+    if (!work_thread_active_) return;
+
+    work_mutex_.lock();
+    work_queue_.push(std::move(func));
+    work_mutex_.unlock();
+    work_cv_.notify_all();
+  }
+
+ private:
+  void RunAsyncThread() {
+    while (work_thread_active_) {
+      std::function<void(void)> func;
+
+      {
+        // Wait for an available callback
+        std::unique_lock<std::mutex> lock(work_mutex_);
+        work_cv_.wait(lock, [&]() {
+          return !work_queue_.empty() || !work_thread_active_;
+        });
+
+        if (!work_thread_active_) {
+          break;
+        }
+
+        func = std::move(work_queue_.front());
+        work_queue_.pop();
+      }
+
+      // Call the function with an unlocked mutex, as this might be
+      // delayed and we don't want to block callers from adding more
+      // events.
+
+      try {
+        func();
+      } catch (const std::exception &ex) {
+        LOG_ERROR("Async function exception: %s", ex.what());
+      } catch (...) {
+        LOG_ERROR("Unknown async function exception.");
+      }
+    }
+  }
+
+  std::mutex work_mutex_;
+  std::condition_variable work_cv_;
+  std::queue<std::function<void(void)>> work_queue_;
+
+  std::atomic_bool work_thread_active_ {true};
+  std::thread work_thread_;
+};
 
 #define WAIT_UNTIL_FALSE(obj, var)                \
     do {                                          \
@@ -91,6 +198,7 @@
 @property(strong, atomic) BleTask* task;
 @property(strong, atomic) NSError* disconnectionError;
 @property(strong) NSMutableDictionary<NSString*, CharacteristicExtras*>* characteristicExtras;
+@property(nonatomic) WorkQueue *workQueue;
 
 - (CBService*)findService:(NSString*)uuid;
 - (CBCharacteristic*)findCharacteristic:(NSString*)uuid service:(CBService*)service;
@@ -113,6 +221,7 @@
         _peripheral.delegate = self;
         _characteristicExtras = [[NSMutableDictionary alloc] init];
         _task = [[BleTask alloc] init];
+        _workQueue = new WorkQUeue();
     }
     return self;
 }
@@ -627,7 +736,6 @@
 }
 
 - (void)peripheral:(CBPeripheral*)peripheral didUpdateValueForCharacteristic:(CBCharacteristic*)characteristic error:(NSError*)error {
-    // NSLog(@"$$$$ PeripheralBaseMacOS priority: %f", [NSThread currentThread].threadPriority);
     CharacteristicExtras* characteristicExtras = [self.characteristicExtras objectForKey:[[characteristic.UUID UUIDString] lowercaseString]];
 
     if (characteristic.isNotifying) {
@@ -637,8 +745,11 @@
         }
 
         if (characteristicExtras->valueChangedCallback != nil) {
-            characteristicExtras->valueChangedCallback(
-                SimpleBLE::ByteArray((const char*)characteristic.value.bytes, characteristic.value.length));
+            self.workQueue.RunAsync([=, characteristicExtras]() {
+                NSLog(@"$$$$ PeripheralBaseMacOS priority: %f", [NSThread currentThread].threadPriority);
+                characteristicExtras->valueChangedCallback(
+                                SimpleBLE::ByteArray((const char*)characteristic.value.bytes, characteristic.value.length));
+            });
         }
 
     } else {
