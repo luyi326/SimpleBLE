@@ -42,9 +42,9 @@
 
         // Wait for the central manager state to be updated for up to 5 seconds.
         NSDate* endDate = [NSDate dateWithTimeInterval:5.0 sinceDate:NSDate.now];
-        while (_centralManager.state == CBManagerStateUnknown && [NSDate.now compare:endDate] == NSOrderedAscending) {
-            [NSThread sleepForTimeInterval:0.01];
-        }
+        // while (_centralManager.state == CBManagerStateUnknown && [NSDate.now compare:endDate] == NSOrderedAscending) {
+        //     [NSThread sleepForTimeInterval:0.01];
+        // }
     }
     return self;
 }
