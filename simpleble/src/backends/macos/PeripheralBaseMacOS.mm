@@ -12,7 +12,6 @@
 #include <queue>
 #include <thread>
 #include <pthread.h>
-#include "nlk_logging.hpp"
 #include <iostream>
 using namespace std;
 
