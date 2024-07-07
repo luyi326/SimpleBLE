@@ -744,16 +744,16 @@ class WorkQueue {
         }
 
             SimpleBLE::ByteArray stuff((const char*)characteristic.value.bytes, characteristic.value.length);
-            __weak typeof(self) weakSelf = self;
+            __weak typeof(characteristicExtras) weakCharacteristicExtras = characteristicExtras;
             CFRetain((__bridge CFTypeRef)characteristicExtras);
-            self.workQueue->RunAsync([=, &weakSelf, &characteristicExtras, &stuff]() {
-                __strong typeof(weakSelf) strongSelf = weakSelf;
-                if (!strongSelf) return;
+            self.workQueue->RunAsync([=, &weakCharacteristicExtras, &stuff]() {
+                __strong typeof(weakCharacteristicExtras) strongCharacteristicExtras = weakCharacteristicExtras;
+                if (!strongCharacteristicExtras) return;
                 NSLog(@"$$$$ PeripheralBaseMacOS priority: %f", [NSThread currentThread].threadPriority);
-                if (characteristicExtras->valueChangedCallback != nil) {
-                    characteristicExtras->valueChangedCallback("");
+                if (strongCharacteristicExtras->valueChangedCallback != nil) {
+                    strongCharacteristicExtras->valueChangedCallback("");
                 }
-                CFRelease((__bridge CFTypeRef)characteristicExtras);
+                CFRelease((__bridge CFTypeRef)strongCharacteristicExtras);
             });
 
     } else {
