@@ -4,6 +4,7 @@
 #import <simpleble/Exceptions.h>
 #import "LoggingInternal.h"
 #import "Utils.h"
+#import <pthread.h>
 
 @interface AdapterBaseMacOS () {
 }
@@ -13,7 +14,11 @@
 @property(strong) dispatch_queue_t centralManagerQueue;
 @property(strong) CBCentralManager* centralManager;
 
+- (void)setThreadPriority;
+
 @end
+
+
 
 @implementation AdapterBaseMacOS
 
@@ -31,6 +36,9 @@
         dispatch_queue_attr_t qos = dispatch_queue_attr_make_with_qos_class(DISPATCH_QUEUE_SERIAL, QOS_CLASS_USER_INTERACTIVE, -15);
         _centralManagerQueue = dispatch_queue_create("AdapterBaseMacOS.centralManagerQueue", qos);
         _centralManager = [[CBCentralManager alloc] initWithDelegate:self queue:_centralManagerQueue options:nil];
+        dispatch_async(_centralManagerQueue, ^{
+            [self setThreadPriority];
+        });
 
         // Wait for the central manager state to be updated for up to 5 seconds.
         NSDate* endDate = [NSDate dateWithTimeInterval:5.0 sinceDate:NSDate.now];
@@ -39,6 +47,25 @@
         }
     }
     return self;
+}
+
+- (void)setThreadPriority {
+    pthread_t thread = pthread_self();
+    int policy;
+    struct sched_param param;
+
+    // Get current policy and priority
+    pthread_getschedparam(thread, &policy, &param);
+    
+    // Set desired policy and priority
+    policy = SCHED_FIFO;
+    param.sched_priority = 50; // Adjust as needed, between 1 and 63 for SCHED_RR
+    
+    if (pthread_setschedparam(thread, policy, &param) != 0) {
+        NSLog(@"Failed to set thread scheduling parameters");
+    } else {
+        NSLog(@"Set thread policy: SCHED_RR, priority: %d", param.sched_priority);
+    }
 }
 
 - (void*)underlying {
