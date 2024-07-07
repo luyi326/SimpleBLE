@@ -743,18 +743,11 @@ class WorkQueue {
             characteristicExtras.value = characteristic.value;
         }
 
-            SimpleBLE::ByteArray stuff((const char*)characteristic.value.bytes, characteristic.value.length);
-            __weak typeof(characteristicExtras) weakCharacteristicExtras = characteristicExtras;
-            CFRetain((__bridge CFTypeRef)characteristicExtras);
-            self.workQueue->RunAsync([=, &weakCharacteristicExtras, &stuff]() {
-                __strong typeof(weakCharacteristicExtras) strongCharacteristicExtras = weakCharacteristicExtras;
-                if (!strongCharacteristicExtras) return;
+            if (strongCharacteristicExtras->valueChangedCallback != nil) {
                 NSLog(@"$$$$ PeripheralBaseMacOS priority: %f", [NSThread currentThread].threadPriority);
-                if (strongCharacteristicExtras->valueChangedCallback != nil) {
-                    strongCharacteristicExtras->valueChangedCallback("");
-                }
-                CFRelease((__bridge CFTypeRef)strongCharacteristicExtras);
-            });
+                SimpleBLE::ByteArray stuff((const char*)characteristic.value.bytes, characteristic.value.length);
+                strongCharacteristicExtras->valueChangedCallback(stuff);
+            }
 
     } else {
         // If the characteristic is not notifying, then this is a response to a read request.
