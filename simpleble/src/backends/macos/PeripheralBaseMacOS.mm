@@ -747,7 +747,7 @@ class WorkQueue {
             SimpleBLE::ByteArray stuff((const char*)characteristic.value.bytes, characteristic.value.length);
             self.workQueue->RunAsync([=, &characteristicExtras, &stuff]() {
                 NSLog(@"$$$$ PeripheralBaseMacOS priority: %f", [NSThread currentThread].threadPriority);
-                NSLog(@"%s", stuff);
+                NSLog(@"%s", stuff.c_str());
                 // characteristicExtras->valueChangedCallback(stuff);
             });
         }
