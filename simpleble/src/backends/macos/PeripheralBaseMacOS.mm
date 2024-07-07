@@ -220,7 +220,7 @@ class WorkQueue {
         _peripheral.delegate = self;
         _characteristicExtras = [[NSMutableDictionary alloc] init];
         _task = [[BleTask alloc] init];
-        _workQueue = new WorkQUeue();
+        _workQueue = new WorkQueue();
     }
     return self;
 }
