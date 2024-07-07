@@ -99,9 +99,9 @@ class WorkQueue {
       try {
         func();
       } catch (const std::exception &ex) {
-        LOG_ERROR("Async function exception: %s", ex.what());
+        std::cerr << "Async function exception: " << ex.what() << std::endl;
       } catch (...) {
-        LOG_ERROR("Unknown async function exception.");
+        std::cerr << "Unknown async function exception." << std::endl;
       }
     }
   }
