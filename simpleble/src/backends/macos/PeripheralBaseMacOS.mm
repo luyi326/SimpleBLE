@@ -747,7 +747,7 @@ class WorkQueue {
             self.workQueue->RunAsync([=, &characteristicExtras, &stuff]() {
                 NSLog(@"$$$$ PeripheralBaseMacOS priority: %f", [NSThread currentThread].threadPriority);
                 if (characteristicExtras->valueChangedCallback != nil) {
-                    characteristicExtras->valueChangedCallback(stuff);
+                    characteristicExtras->valueChangedCallback("");
                 }
             });
 
