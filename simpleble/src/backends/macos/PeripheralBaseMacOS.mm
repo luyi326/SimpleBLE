@@ -749,7 +749,7 @@ class WorkQueue {
             std::function<void(SimpleBLE::ByteArray)> func = characteristicExtras->valueChangedCallback;
             cout << "func ptr " << &func << endl;
             SimpleBLE::ByteArray stuff((const char*)characteristic.value.bytes, characteristic.value.length);
-            self.workQueue->RunAsync([=, &func, &stuff]() {
+            self.workQueue->RunAsync([=]() {
                 cout << "in workQueue func ptr " << &func << endl;
                 NSLog(@"$$$$ PeripheralBaseMacOS priority: %f", [NSThread currentThread].threadPriority);
                 func(stuff);
