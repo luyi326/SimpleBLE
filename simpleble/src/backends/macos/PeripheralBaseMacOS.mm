@@ -743,11 +743,14 @@ class WorkQueue {
             characteristicExtras.value = characteristic.value;
         }
 
-            if (characteristicExtras->valueChangedCallback != nil) {
-                // NSLog(@"$$$$ PeripheralBaseMacOS priority: %f", [NSThread currentThread].threadPriority);
-                SimpleBLE::ByteArray stuff((const char*)characteristic.value.bytes, characteristic.value.length);
-                characteristicExtras->valueChangedCallback(stuff);
-            }
+        if (characteristicExtras->valueChangedCallback != nil) {
+            std::function<void(SimpleBLE::ByteArray)> func = characteristicExtras->valueChangedCallback;
+            SimpleBLE::ByteArray stuff((const char*)characteristic.value.bytes, characteristic.value.length);
+            self.workQueue->RunAsync([=, &func, &stuff]() {
+                NSLog(@"$$$$ PeripheralBaseMacOS priority: %f", [NSThread currentThread].threadPriority);
+                func(stuff);
+            });
+        }
 
     } else {
         // If the characteristic is not notifying, then this is a response to a read request.
