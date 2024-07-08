@@ -100,11 +100,11 @@ class WorkQueue {
         func();
       } catch (const std::runtime_error &ex) {
         std::cerr << "Async function runtime exception: " << ex.what() << std::endl;
-      } catch (const std::exception &ex) {
-        std::cerr << "Async function exception: " << ex.what() << std::endl;
-      } catch (...) {
-        std::cerr << "Unknown async function exception." << std::endl;
-      }
+      }// catch (const std::exception &ex) {
+      //   std::cerr << "Async function exception: " << ex.what() << std::endl;
+      // } catch (...) {
+      //   std::cerr << "Unknown async function exception." << std::endl;
+      // }
     }
   }
 
